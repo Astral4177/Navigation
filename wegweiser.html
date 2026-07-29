@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1E2318">
+<title>Wegweiser — Sehenswürdigkeiten in der Nähe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground:   #E4E7DB;
+    --contour:  #A8AE93;
+    --ink:      #1E2318;
+    --ink-soft: #5B6152;
+    --plate:    #E5B531;
+    --trail:    #C2452D;
+    --sign: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --body: "Karla", system-ui, sans-serif;
+    --data: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; }
+
+  body {
+    background: var(--ground);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 39px, rgba(168,174,147,.35) 39px 40px),
+      repeating-linear-gradient(90deg, transparent 0 39px, rgba(168,174,147,.35) 39px 40px);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+    padding: 0 0 96px;
+  }
+
+  .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px 0; }
+
+  /* ---------- Kopf ---------- */
+  .masthead { display: flex; align-items: baseline; gap: 10px; border-bottom: 2px solid var(--ink); padding-bottom: 8px; }
+  .masthead h1 {
+    font-family: var(--sign);
+    font-weight: 700;
+    font-size: 34px;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .masthead p { font-family: var(--data); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 3px auto; }
+
+  /* ---------- Bedienfeld ---------- */
+  .panel { margin-top: 18px; display: grid; gap: 16px; }
+
+  .field > label,
+  .field > .field-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--data); font-size: 11px; letter-spacing: .10em;
+    text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px;
+  }
+  .field-value { font-weight: 700; color: var(--ink); }
+
+  .seg { display: flex; border: 2px solid var(--ink); background: transparent; }
+  .seg button {
+    flex: 1; appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 11px 4px; font-family: var(--sign); font-weight: 600; font-size: 17px;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+    border-right: 2px solid var(--ink);
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+
+  input[type="range"] { width: 100%; accent-color: var(--trail); margin: 0; height: 32px; }
+
+  .locrow { display: flex; gap: 8px; }
+  input[type="text"] {
+    flex: 1; min-width: 0; border: 2px solid var(--ink); background: #EFF1E8;
+    padding: 11px 12px; font-family: var(--body); font-size: 16px; color: var(--ink);
+  }
+  input[type="text"]::placeholder { color: var(--ink-soft); }
+
+  .btn {
+    appearance: none; cursor: pointer; border: 2px solid var(--ink);
+    background: var(--ink); color: var(--ground);
+    font-family: var(--sign); font-weight: 700; font-size: 18px;
+    letter-spacing: .08em; text-transform: uppercase; padding: 11px 16px;
+  }
+  .btn.ghost { background: transparent; color: var(--ink); }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  .btn-find { width: 100%; padding: 15px; font-size: 21px; }
+
+  :focus-visible { outline: 3px solid var(--trail); outline-offset: 2px; }
+
+  /* ---------- Statuszeile ---------- */
+  .status {
+    margin-top: 18px; font-family: var(--data); font-size: 12px; line-height: 1.6;
+    color: var(--ink-soft); border-left: 3px solid var(--contour); padding-left: 10px;
+    white-space: pre-line;
+  }
+  .status.error { color: var(--trail); border-color: var(--trail); }
+
+  /* ---------- Der Pfosten mit den Schildern ---------- */
+  .post { margin-top: 22px; position: relative; padding-left: 14px; }
+  .post::before {
+    content: ""; position: absolute; left: 0; top: -6px; bottom: 10px; width: 10px;
+    background: var(--ink);
+  }
+  .post:empty { display: none; }
+
+  .plate {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    appearance: none; border: 0; margin-bottom: 8px;
+    background: var(--plate); color: var(--ink);
+    padding: 10px 34px 10px 13px;
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%);
+    animation: settle .26s ease-out both;
+  }
+  .plate .top { display: flex; align-items: baseline; gap: 10px; }
+  .plate .name {
+    font-family: var(--sign); font-weight: 600; font-size: 19px;
+    letter-spacing: .03em; text-transform: uppercase; line-height: 1.15;
+    flex: 1; min-width: 0;
+  }
+  .plate .dist { font-family: var(--data); font-size: 14px; font-weight: 700; white-space: nowrap; }
+  .plate .meta {
+    display: flex; gap: 8px; align-items: baseline;
+    font-family: var(--data); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; opacity: .72; margin-top: 2px;
+  }
+  .plate[aria-pressed="true"] { background: var(--trail); color: #F6F2E7; }
+  .plate[aria-pressed="true"] .meta { opacity: .85; }
+  .plate .num {
+    font-family: var(--data); font-weight: 700; font-size: 12px;
+    border: 1.5px solid currentColor; border-radius: 50%;
+    width: 20px; height: 20px; display: none; align-items: center; justify-content: center;
+    flex: 0 0 20px;
+  }
+  .plate[aria-pressed="true"] .num { display: flex; }
+
+  @keyframes settle { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .plate { animation: none; } }
+
+  /* ---------- Startleiste ---------- */
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    background: var(--ink); color: var(--ground);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: none; gap: 10px; align-items: center;
+  }
+  .bar.on { display: flex; }
+  .bar .count { font-family: var(--data); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; flex: 1; }
+  .bar .go {
+    background: var(--plate); color: var(--ink); border: 0; cursor: pointer;
+    font-family: var(--sign); font-weight: 700; font-size: 19px;
+    letter-spacing: .07em; text-transform: uppercase; padding: 12px 18px;
+  }
+  .bar .clear {
+    background: transparent; color: var(--ground); border: 2px solid currentColor; cursor: pointer;
+    font-family: var(--sign); font-weight: 600; font-size: 15px;
+    letter-spacing: .06em; text-transform: uppercase; padding: 10px 12px;
+  }
+
+  footer { max-width: 620px; margin: 28px auto 0; padding: 14px 16px 0; border-top: 1px solid var(--contour);
+           font-family: var(--data); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>Wegweiser</h1>
+    <p id="modeTag">zu Fuß</p>
+  </header>
+
+  <div class="panel">
+    <div class="field">
+      <div class="field-label"><span>Standort</span></div>
+      <div class="locrow">
+        <button class="btn" id="gps" type="button">GPS</button>
+        <input type="text" id="place" placeholder="oder Ort / Adresse eingeben" autocomplete="off" enterkeyhint="search">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span>Umkreis</span><span class="field-value" id="radVal">1,0 km</span></div>
+      <input type="range" id="rad" min="0" max="7" step="1" value="2" aria-label="Umkreis">
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span>Unterwegs</span></div>
+      <div class="seg" id="mode">
+        <button type="button" data-mode="walking"   aria-pressed="true">Fuß</button>
+        <button type="button" data-mode="bicycling" aria-pressed="false">Rad</button>
+        <button type="button" data-mode="driving"   aria-pressed="false">Auto</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span>Was</span></div>
+      <div class="seg" id="cat">
+        <button type="button" data-cat="sights"  aria-pressed="true">Sehens&shy;würdiges</button>
+        <button type="button" data-cat="museums" aria-pressed="false">Museen</button>
+        <button type="button" data-cat="nature"  aria-pressed="false">Natur</button>
+      </div>
+    </div>
+
+    <button class="btn btn-find" id="find" type="button" disabled>Umgebung absuchen</button>
+  </div>
+
+  <p class="status" id="status">Standort per GPS holen oder einen Ort eintippen.</p>
+
+  <div class="post" id="post"></div>
+</div>
+
+<footer>Daten: OpenStreetMap (Overpass API) · Geocoding: Nominatim · Navigation: Google Maps</footer>
+
+<div class="bar" id="bar">
+  <button class="clear" id="clear" type="button">Leeren</button>
+  <span class="count" id="count"></span>
+  <button class="go" id="go" type="button">Route starten</button>
+</div>
+
+<script>
+"use strict";
+
+const RADII  = [300, 500, 1000, 2000, 3000, 5000, 10000, 20000];
+const SPEED  = { walking: 4.8, bicycling: 15, driving: 40 };
+const LABEL  = { walking: "zu Fuß", bicycling: "mit dem Rad", driving: "mit dem Auto" };
+const MAXWP  = 9;   // Wegpunkt-Limit des Google-Maps-URL-Aufrufs
+
+const CATS = {
+  sights: [
+    ["tourism", "attraction|museum|viewpoint|artwork|gallery|zoo|theme_park|aquarium"],
+    ["historic", null]
+  ],
+  museums: [["tourism", "museum|gallery"]],
+  nature: [
+    ["tourism", "viewpoint|picnic_site"],
+    ["natural", "peak|waterfall|spring|cave_entrance"],
+    ["leisure", "park|nature_reserve|garden"]
+  ]
+};
+
+const KIND_DE = {
+  attraction: "Sehenswürdigkeit", museum: "Museum", viewpoint: "Aussichtspunkt",
+  artwork: "Kunstwerk", gallery: "Galerie", zoo: "Zoo", theme_park: "Freizeitpark",
+  aquarium: "Aquarium", picnic_site: "Rastplatz", monument: "Denkmal",
+  memorial: "Gedenkstätte", castle: "Burg / Schloss", ruins: "Ruine",
+  church: "Kirche", archaeological_site: "Ausgrabung", tower: "Turm",
+  city_gate: "Stadttor", wayside_cross: "Wegkreuz", building: "Historisches Gebäude",
+  park: "Park", nature_reserve: "Naturschutzgebiet", garden: "Garten",
+  peak: "Gipfel", waterfall: "Wasserfall", spring: "Quelle", cave_entrance: "Höhle"
+};
+
+const state = { origin: null, mode: "walking", cat: "sights", pois: [], picked: [] };
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  gps: $("gps"), place: $("place"), rad: $("rad"), radVal: $("radVal"),
+  mode: $("mode"), cat: $("cat"), find: $("find"), status: $("status"),
+  post: $("post"), bar: $("bar"), count: $("count"), go: $("go"),
+  clear: $("clear"), modeTag: $("modeTag")
+};
+
+/* ---------- Anzeige-Helfer ---------- */
+
+const radius = () => RADII[+els.rad.value];
+
+function fmtKm(m) {
+  return m < 1000 ? `${Math.round(m)} m`
+                  : `${(m / 1000).toFixed(1).replace(".", ",")} km`;
+}
+
+function eta(m) {
+  return Math.max(1, Math.round((m * 1.3 / 1000) / SPEED[state.mode] * 60));
+}
+
+function say(text, isError) {
+  els.status.textContent = text;
+  els.status.classList.toggle("error", !!isError);
+}
+
+function haversine(a, b, c, d) {
+  const R = 6371000, r = Math.PI / 180;
+  const p1 = a * r, p2 = c * r, dp = (c - a) * r, dl = (d - b) * r;
+  const x = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+/* ---------- Standort ---------- */
+
+function useGps() {
+  if (!navigator.geolocation) {
+    say("Dieser Browser gibt keinen Standort heraus. Bitte einen Ort eintippen.", true);
+    return;
+  }
+  els.gps.disabled = true;
+  say("Suche GPS-Fix …");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      els.gps.disabled = false;
+      setOrigin(pos.coords.latitude, pos.coords.longitude,
+                `GPS-Position, genau auf ±${Math.round(pos.coords.accuracy)} m`);
+    },
+    (err) => {
+      els.gps.disabled = false;
+      const why = {
+        1: "Standortfreigabe verweigert — im Browser für diese Seite erlauben, oder einen Ort eintippen.",
+        2: "Keine Position verfügbar. Draußen erneut versuchen oder einen Ort eintippen.",
+        3: "GPS hat zu lange gebraucht. Noch einmal versuchen."
+      }[err.code] || "Standort nicht ermittelbar.";
+      say(why, true);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+  );
+}
+
+async function geocode(query) {
+  const url = "https://nominatim.openstreetmap.org/search?"
+            + new URLSearchParams({ q: query, format: "json", limit: "1" });
+  const res = await fetch(url, { headers: { "Accept-Language": "de" } });
+  if (!res.ok) throw new Error("Ortssuche nicht erreichbar (" + res.status + ")");
+  const hits = await res.json();
+  if (!hits.length) throw new Error("Diesen Ort gibt es in OpenStreetMap nicht.");
+  return hits[0];
+}
+
+async function useTypedPlace() {
+  const q = els.place.value.trim();
+  if (!q) return;
+  const m = q.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)\s*$/);
+  if (m) {
+    setOrigin(parseFloat(m[1].replace(",", ".")), parseFloat(m[2].replace(",", ".")),
+              "Eingegebene Koordinaten");
+    return;
+  }
+  say("Suche Ort …");
+  try {
+    const hit = await geocode(q);
+    setOrigin(+hit.lat, +hit.lon, hit.display_name);
+  } catch (e) {
+    say(e.message, true);
+  }
+}
+
+function setOrigin(lat, lon, label) {
+  state.origin = { lat, lon };
+  els.find.disabled = false;
+  say(`Start: ${label}\n${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+}
+
+/* ---------- Suche ---------- */
+
+function overpassQuery(lat, lon, r, filters) {
+  const lines = [];
+  for (const [key, rx] of filters) {
+    const sel = rx ? `["${key}"~"${rx}"]` : `["${key}"]`;
+    for (const el of ["node", "way", "relation"]) {
+      lines.push(`  ${el}(around:${r},${lat},${lon})${sel};`);
+    }
+  }
+  return `[out:json][timeout:50];\n(\n${lines.join("\n")}\n);\nout center tags;`;
+}
+
+async function search() {
+  if (!state.origin) return;
+  const { lat, lon } = state.origin, r = radius();
+  els.find.disabled = true;
+  say(`Frage OpenStreetMap ab — ${fmtKm(r)} Umkreis …`);
+  clearPicks();
+  els.post.innerHTML = "";
+
+  const ctrl = new AbortController();
+  const kill = setTimeout(() => ctrl.abort(), 50000);
+  try {
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: "data=" + encodeURIComponent(overpassQuery(lat, lon, r, CATS[state.cat])),
+      signal: ctrl.signal
+    });
+    if (res.status === 429 || res.status === 504) {
+      throw new Error("Der Overpass-Server ist gerade überlastet. In einer Minute nochmal.");
+    }
+    if (!res.ok) throw new Error("Overpass antwortet mit Fehler " + res.status + ".");
+
+    const seen = new Set(), out = [];
+    for (const el of (await res.json()).elements || []) {
+      const t = el.tags || {};
+      const name = t.name || t["name:de"];
+      if (!name) continue;
+      const plat = el.lat ?? el.center?.lat, plon = el.lon ?? el.center?.lon;
+      if (plat == null) continue;
+      const key = name.toLowerCase() + "|" + plat.toFixed(4) + "|" + plon.toFixed(4);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const raw = t.tourism || t.historic || t.leisure || t.natural || "poi";
+      out.push({
+        name, lat: plat, lon: plon,
+        kind: KIND_DE[raw] || raw.replace(/_/g, " "),
+        dist: haversine(lat, lon, plat, plon)
+      });
+    }
+    out.sort((a, b) => a.dist - b.dist);
+    state.pois = out.slice(0, 40);
+    render();
+  } catch (e) {
+    say(e.name === "AbortError"
+        ? "Die Abfrage hat zu lange gebraucht. Kleinerer Umkreis hilft."
+        : e.message, true);
+  } finally {
+    clearTimeout(kill);
+    els.find.disabled = false;
+  }
+}
+
+/* ---------- Ausgabe ---------- */
+
+function render() {
+  els.post.innerHTML = "";
+  if (!state.pois.length) {
+    say(`Im Umkreis von ${fmtKm(radius())} ist nichts erfasst. Umkreis vergrößern oder andere Kategorie wählen.`);
+    return;
+  }
+  say(`${state.pois.length} Ziele im Umkreis von ${fmtKm(radius())}. Antippen zum Auswählen, dann unten die Route starten.`);
+
+  state.pois.forEach((p, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "plate";
+    b.setAttribute("aria-pressed", "false");
+    b.style.animationDelay = Math.min(i * 22, 400) + "ms";
+    b.innerHTML =
+      `<span class="top">
+         <span class="num"></span>
+         <span class="name"></span>
+         <span class="dist"></span>
+       </span>
+       <span class="meta"><span class="kind"></span><span>~${eta(p.dist)} min</span></span>`;
+    b.querySelector(".name").textContent = p.name;
+    b.querySelector(".dist").textContent = fmtKm(p.dist);
+    b.querySelector(".kind").textContent = p.kind;
+    b.addEventListener("click", () => toggle(i, b));
+    els.post.appendChild(b);
+  });
+}
+
+function toggle(i, btn) {
+  const at = state.picked.indexOf(i);
+  if (at === -1) state.picked.push(i); else state.picked.splice(at, 1);
+  btn.setAttribute("aria-pressed", at === -1 ? "true" : "false");
+  renumber();
+}
+
+function renumber() {
+  [...els.post.children].forEach((el, i) => {
+    const n = state.picked.indexOf(i);
+    el.querySelector(".num").textContent = n === -1 ? "" : String(n + 1);
+  });
+  const n = state.picked.length;
+  els.bar.classList.toggle("on", n > 0);
+  els.count.textContent = n === 1 ? "1 Ziel" : `${n} Ziele in Reihenfolge`;
+  els.go.textContent = n > 1 ? "Route starten" : "Losgehen";
+}
+
+function clearPicks() {
+  state.picked = [];
+  [...els.post.children].forEach((el) => el.setAttribute("aria-pressed", "false"));
+  renumber();
+}
+
+/* ---------- Übergabe an Google Maps ---------- */
+
+function startRoute() {
+  if (!state.origin || !state.picked.length) return;
+  let stops = state.picked.map((i) => state.pois[i]);
+  let note = "";
+  if (stops.length > MAXWP + 1) {
+    stops = stops.slice(0, MAXWP + 1);
+    note = ` Google nimmt im Aufruf nur ${MAXWP + 1} Stopps — die weiteren wurden weggelassen.`;
+  }
+  const dest = stops[stops.length - 1];
+  const via = stops.slice(0, -1);
+  const q = new URLSearchParams({
+    api: "1",
+    origin: `${state.origin.lat.toFixed(6)},${state.origin.lon.toFixed(6)}`,
+    destination: `${dest.lat.toFixed(6)},${dest.lon.toFixed(6)}`,
+    travelmode: state.mode
+  });
+  let url = "https://www.google.com/maps/dir/?" + q.toString();
+  if (via.length) {
+    url += "&waypoints=" + via.map((p) => `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`).join("|");
+  }
+  say(`Route ${LABEL[state.mode]} an Google Maps übergeben.${note}`);
+  window.open(url, "_blank", "noopener");
+}
+
+/* ---------- Verdrahtung ---------- */
+
+els.gps.addEventListener("click", useGps);
+els.place.addEventListener("change", useTypedPlace);
+els.place.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); useTypedPlace(); } });
+
+els.rad.addEventListener("input", () => { els.radVal.textContent = fmtKm(radius()); });
+
+els.mode.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-mode]");
+  if (!b) return;
+  state.mode = b.dataset.mode;
+  [...els.mode.children].forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  els.modeTag.textContent = LABEL[state.mode];
+  if (state.pois.length) {
+    const keep = state.picked.slice();
+    state.picked = [];
+    render();
+    keep.forEach((i) => {
+      const el = els.post.children[i];
+      if (el) { state.picked.push(i); el.setAttribute("aria-pressed", "true"); }
+    });
+    renumber();
+  }
+});
+
+els.cat.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-cat]");
+  if (!b) return;
+  state.cat = b.dataset.cat;
+  [...els.cat.children].forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+});
+
+els.find.addEventListener("click", search);
+els.go.addEventListener("click", startRoute);
+els.clear.addEventListener("click", clearPicks);
+
+els.radVal.textContent = fmtKm(radius());
+</script>
+</body>
+</html>
