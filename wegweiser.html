@@ -16,6 +16,10 @@
     --ink-soft: #5B6152;
     --plate:    #E5B531;
     --trail:    #C2452D;
+    --c-sights:      #E5B531;
+    --c-museums:     #3E6B8C;
+    --c-nature:      #5E8C3A;
+    --c-restaurants: #C77B3C;
     --sign: "Barlow Condensed", "Arial Narrow", sans-serif;
     --body: "Karla", system-ui, sans-serif;
     --data: ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -72,6 +76,23 @@
   }
   .seg button:last-child { border-right: 0; }
   .seg button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+
+  /* Mehrfachauswahl-Kacheln (Kategorien) */
+  .catgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .catgrid button {
+    appearance: none; cursor: pointer; border: 2px solid var(--ink); background: transparent;
+    padding: 11px 6px; font-family: var(--sign); font-weight: 600; font-size: 16px;
+    letter-spacing: .05em; text-transform: uppercase; color: var(--ink);
+  }
+  .catgrid button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+  .catgrid button[data-cat="sights"]      { border-color: var(--c-sights); }
+  .catgrid button[data-cat="museums"]     { border-color: var(--c-museums); }
+  .catgrid button[data-cat="nature"]      { border-color: var(--c-nature); }
+  .catgrid button[data-cat="restaurants"] { border-color: var(--c-restaurants); }
+  .catgrid button[data-cat="sights"][aria-pressed="true"]      { background: var(--c-sights);      color: var(--ink); }
+  .catgrid button[data-cat="museums"][aria-pressed="true"]     { background: var(--c-museums);     color: var(--ground); }
+  .catgrid button[data-cat="nature"][aria-pressed="true"]      { background: var(--c-nature);      color: var(--ground); }
+  .catgrid button[data-cat="restaurants"][aria-pressed="true"] { background: var(--c-restaurants); color: var(--ink); }
 
   input[type="range"] { width: 100%; accent-color: var(--trail); margin: 0; height: 32px; }
 
@@ -131,7 +152,11 @@
     font-family: var(--data); font-size: 11px; letter-spacing: .06em;
     text-transform: uppercase; opacity: .72; margin-top: 2px;
   }
-  .plate[aria-pressed="true"] { background: var(--trail); color: #F6F2E7; }
+  .plate[data-cat="sights"]      { background: var(--c-sights);      color: var(--ink); }
+  .plate[data-cat="museums"]     { background: var(--c-museums);     color: var(--ground); }
+  .plate[data-cat="nature"]      { background: var(--c-nature);      color: var(--ground); }
+  .plate[data-cat="restaurants"] { background: var(--c-restaurants); color: var(--ink); }
+  .plate[aria-pressed="true"]    { background: var(--ink); color: var(--ground); }
   .plate[aria-pressed="true"] .meta { opacity: .85; }
   .plate .num {
     font-family: var(--data); font-weight: 700; font-size: 12px;
@@ -200,11 +225,20 @@
     </div>
 
     <div class="field">
-      <div class="field-label"><span>Was</span></div>
-      <div class="seg" id="cat">
-        <button type="button" data-cat="sights"  aria-pressed="true">Sehens&shy;würdiges</button>
-        <button type="button" data-cat="museums" aria-pressed="false">Museen</button>
-        <button type="button" data-cat="nature"  aria-pressed="false">Natur</button>
+      <div class="field-label"><span>Was</span><span class="field-value">mehrere möglich</span></div>
+      <div class="catgrid" id="cat">
+        <button type="button" data-cat="sights"      aria-pressed="true">Sehens&shy;würdiges</button>
+        <button type="button" data-cat="museums"     aria-pressed="false">Museen</button>
+        <button type="button" data-cat="nature"      aria-pressed="false">Natur</button>
+        <button type="button" data-cat="restaurants" aria-pressed="false">Restaurants</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span>Tour</span></div>
+      <div class="seg" id="trip">
+        <button type="button" data-trip="oneway" aria-pressed="true">Einfach</button>
+        <button type="button" data-trip="round"  aria-pressed="false">Rundreise</button>
       </div>
     </div>
 
@@ -242,6 +276,9 @@ const CATS = {
     ["tourism", "viewpoint|picnic_site"],
     ["natural", "peak|waterfall|spring|cave_entrance"],
     ["leisure", "park|nature_reserve|garden"]
+  ],
+  restaurants: [
+    ["amenity", "restaurant|cafe|fast_food|biergarten|pub|bar|ice_cream"]
   ]
 };
 
@@ -253,15 +290,17 @@ const KIND_DE = {
   church: "Kirche", archaeological_site: "Ausgrabung", tower: "Turm",
   city_gate: "Stadttor", wayside_cross: "Wegkreuz", building: "Historisches Gebäude",
   park: "Park", nature_reserve: "Naturschutzgebiet", garden: "Garten",
-  peak: "Gipfel", waterfall: "Wasserfall", spring: "Quelle", cave_entrance: "Höhle"
+  peak: "Gipfel", waterfall: "Wasserfall", spring: "Quelle", cave_entrance: "Höhle",
+  restaurant: "Restaurant", cafe: "Café", fast_food: "Imbiss",
+  biergarten: "Biergarten", pub: "Pub", bar: "Bar", ice_cream: "Eisdiele"
 };
 
-const state = { origin: null, mode: "walking", cat: "sights", pois: [], picked: [] };
+const state = { origin: null, mode: "walking", cats: new Set(["sights"]), roundtrip: false, pois: [], picked: [] };
 
 const $ = (id) => document.getElementById(id);
 const els = {
   gps: $("gps"), place: $("place"), rad: $("rad"), radVal: $("radVal"),
-  mode: $("mode"), cat: $("cat"), find: $("find"), status: $("status"),
+  mode: $("mode"), cat: $("cat"), trip: $("trip"), find: $("find"), status: $("status"),
   post: $("post"), bar: $("bar"), count: $("count"), go: $("go"),
   clear: $("clear"), modeTag: $("modeTag")
 };
@@ -303,6 +342,7 @@ function useGps() {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       els.gps.disabled = false;
+      els.place.value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
       setOrigin(pos.coords.latitude, pos.coords.longitude,
                 `GPS-Position, genau auf ±${Math.round(pos.coords.accuracy)} m`);
     },
@@ -355,6 +395,32 @@ function setOrigin(lat, lon, label) {
 
 /* ---------- Suche ---------- */
 
+const CAT_ORDER = ["restaurants", "nature", "museums", "sights"];
+
+function matchesFilter(t, [key, rx]) {
+  const v = t[key];
+  if (v == null) return false;
+  return rx ? new RegExp(rx).test(v) : true;
+}
+
+function classify(t) {
+  for (const c of CAT_ORDER) {
+    if (state.cats.has(c) && CATS[c].some((f) => matchesFilter(t, f))) return c;
+  }
+  return state.cats.values().next().value;   // Rückfall: erste gewählte Kategorie
+}
+
+function activeFilters() {
+  const out = [], seen = new Set();
+  for (const c of state.cats) {
+    for (const f of (CATS[c] || [])) {
+      const k = f[0] + "|" + f[1];
+      if (!seen.has(k)) { seen.add(k); out.push(f); }
+    }
+  }
+  return out;
+}
+
 function overpassQuery(lat, lon, r, filters) {
   const lines = [];
   for (const [key, rx] of filters) {
@@ -379,7 +445,7 @@ async function search() {
   try {
     const res = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
-      body: "data=" + encodeURIComponent(overpassQuery(lat, lon, r, CATS[state.cat])),
+      body: "data=" + encodeURIComponent(overpassQuery(lat, lon, r, activeFilters())),
       signal: ctrl.signal
     });
     if (res.status === 429 || res.status === 504) {
@@ -397,10 +463,11 @@ async function search() {
       const key = name.toLowerCase() + "|" + plat.toFixed(4) + "|" + plon.toFixed(4);
       if (seen.has(key)) continue;
       seen.add(key);
-      const raw = t.tourism || t.historic || t.leisure || t.natural || "poi";
+      const raw = t.tourism || t.historic || t.leisure || t.natural || t.amenity || "poi";
       out.push({
         name, lat: plat, lon: plon,
         kind: KIND_DE[raw] || raw.replace(/_/g, " "),
+        cat: classify(t),
         dist: haversine(lat, lon, plat, plon)
       });
     }
@@ -431,6 +498,7 @@ function render() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "plate";
+    b.dataset.cat = p.cat;
     b.setAttribute("aria-pressed", "false");
     b.style.animationDelay = Math.min(i * 22, 400) + "ms";
     b.innerHTML =
@@ -478,12 +546,25 @@ function startRoute() {
   if (!state.origin || !state.picked.length) return;
   let stops = state.picked.map((i) => state.pois[i]);
   let note = "";
-  if (stops.length > MAXWP + 1) {
-    stops = stops.slice(0, MAXWP + 1);
-    note = ` Google nimmt im Aufruf nur ${MAXWP + 1} Stopps — die weiteren wurden weggelassen.`;
+  let dest, via;
+
+  if (state.roundtrip) {
+    // Rundreise: alle Ziele sind Zwischenstopps, das Ende ist wieder der Startpunkt
+    if (stops.length > MAXWP) {
+      stops = stops.slice(0, MAXWP);
+      note = ` Google nimmt im Aufruf nur ${MAXWP} Zwischenstopps — die weiteren wurden weggelassen.`;
+    }
+    via = stops;
+    dest = { lat: state.origin.lat, lon: state.origin.lon };
+  } else {
+    if (stops.length > MAXWP + 1) {
+      stops = stops.slice(0, MAXWP + 1);
+      note = ` Google nimmt im Aufruf nur ${MAXWP + 1} Stopps — die weiteren wurden weggelassen.`;
+    }
+    dest = stops[stops.length - 1];
+    via = stops.slice(0, -1);
   }
-  const dest = stops[stops.length - 1];
-  const via = stops.slice(0, -1);
+
   const q = new URLSearchParams({
     api: "1",
     origin: `${state.origin.lat.toFixed(6)},${state.origin.lon.toFixed(6)}`,
@@ -494,7 +575,7 @@ function startRoute() {
   if (via.length) {
     url += "&waypoints=" + via.map((p) => `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`).join("|");
   }
-  say(`Route ${LABEL[state.mode]} an Google Maps übergeben.${note}`);
+  say(`Route ${LABEL[state.mode]}${state.roundtrip ? " als Rundreise" : ""} an Google Maps übergeben.${note}`);
   window.open(url, "_blank", "noopener");
 }
 
@@ -527,8 +608,22 @@ els.mode.addEventListener("click", (e) => {
 els.cat.addEventListener("click", (e) => {
   const b = e.target.closest("button[data-cat]");
   if (!b) return;
-  state.cat = b.dataset.cat;
-  [...els.cat.children].forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  const c = b.dataset.cat;
+  if (state.cats.has(c)) {
+    if (state.cats.size === 1) return;        // mindestens eine Kategorie bleibt aktiv
+    state.cats.delete(c);
+    b.setAttribute("aria-pressed", "false");
+  } else {
+    state.cats.add(c);
+    b.setAttribute("aria-pressed", "true");
+  }
+});
+
+els.trip.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-trip]");
+  if (!b) return;
+  state.roundtrip = b.dataset.trip === "round";
+  [...els.trip.children].forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
 });
 
 els.find.addEventListener("click", search);
