@@ -49,11 +49,13 @@
   .masthead h1 {
     font-family: var(--sign);
     font-weight: 700;
-    font-size: 34px;
-    letter-spacing: .10em;
+    font-size: clamp(23px, 7.6vw, 34px);
+    letter-spacing: .08em;
     text-transform: uppercase;
+    white-space: nowrap;
     margin: 0;
   }
+  .masthead h1 .lc { text-transform: none; }
   .masthead p { font-family: var(--data); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 3px auto; }
 
   /* ---------- Bedienfeld ---------- */
@@ -197,7 +199,7 @@
 
 <div class="wrap">
   <header class="masthead">
-    <h1>Wegweiser</h1>
+    <h1>HG<span class="lc">s</span> Wegweiser</h1>
     <p id="modeTag">zu Fuß</p>
   </header>
 
