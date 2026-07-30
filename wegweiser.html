@@ -239,8 +239,8 @@
     <div class="field">
       <div class="field-label"><span>Tour</span></div>
       <div class="seg" id="trip">
-        <button type="button" data-trip="oneway" aria-pressed="true">Einfach</button>
-        <button type="button" data-trip="round"  aria-pressed="false">Rundreise</button>
+        <button type="button" data-trip="oneway" aria-pressed="false">Einfach</button>
+        <button type="button" data-trip="round"  aria-pressed="true">Rundreise</button>
       </div>
     </div>
 
@@ -297,7 +297,7 @@ const KIND_DE = {
   biergarten: "Biergarten", pub: "Pub", bar: "Bar", ice_cream: "Eisdiele"
 };
 
-const state = { origin: null, mode: "walking", cats: new Set(["sights"]), roundtrip: false, pois: [], picked: [] };
+const state = { origin: null, mode: "walking", cats: new Set(["sights"]), roundtrip: true, pois: [], picked: [] };
 
 const $ = (id) => document.getElementById(id);
 const els = {
@@ -633,6 +633,9 @@ els.go.addEventListener("click", startRoute);
 els.clear.addEventListener("click", clearPicks);
 
 els.radVal.textContent = fmtKm(radius());
+
+// Beim Öffnen automatisch den Standort ermitteln, solange keiner gesetzt ist
+if (!state.origin) useGps();
 </script>
 </body>
 </html>
